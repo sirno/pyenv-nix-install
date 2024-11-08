@@ -11,8 +11,6 @@
 #
 #   python-build options:
 #
-#   -k/--keep          Keep source tree in $PYENV_BUILD_ROOT after installation
-#                      (defaults to $PYENV_ROOT/sources)
 #   -p/--patch         Apply a patch from stdin before building
 #   -v/--verbose       Verbose mode: print compilation status to stdout
 #   --version          Show version of python-build
@@ -26,7 +24,6 @@ if [ "$1" = "--complete" ]; then
   echo --list
   echo --force
   echo --skip-existing
-  echo --keep
   echo --verbose
   echo --version
   echo --debug
@@ -53,7 +50,6 @@ indent() {
 
 unset FORCE
 unset SKIP_EXISTING
-unset KEEP
 unset VERBOSE
 unset HAS_PATCH
 unset DEBUG
@@ -76,9 +72,6 @@ for option in "${OPTIONS[@]}"; do
     ;;
   "s" | "skip-existing" )
     SKIP_EXISTING=true
-    ;;
-  "k" | "keep" )
-    [ -n "${PYENV_BUILD_ROOT}" ] || PYENV_BUILD_ROOT="${PYENV_ROOT}/sources"
     ;;
   "v" | "verbose" )
     VERBOSE="-v"
