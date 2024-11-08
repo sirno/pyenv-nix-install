@@ -2,7 +2,6 @@
   description = "pyenv plugin to manage python versions with nix";
 
   inputs.nixpkgs.url = "nixpkgs";
-
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
   outputs = { self, nixpkgs, flake-utils }:
@@ -12,7 +11,9 @@
         pyenv = pkgs.pyenv;
         pyenv-nix-install = pkgs.callPackage ./default.nix {};
       in {
-        devShell = pkgs.mkShell {
+        packages.default = pyenv-nix-install;
+
+        devShells.default = pkgs.mkShell {
           buildInputs = [ pyenv pyenv-nix-install ];
 
           shellHook = ''
