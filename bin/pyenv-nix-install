@@ -2,16 +2,17 @@
 #
 # Summary: Install a Python version using nix
 #
-# Usage: pyenv install [-f] [-kvp] <version>...
-#        pyenv install -l|--list
+# Usage: pyenv nix-install [-f] [-kv] <version>...
+#        pyenv nix-install -l|--list
+#        pyenv nix-install -q|--query <version>
 #
 #   -l/--list          List all available versions
+#   -q/--query         Search for available versions
 #   -f/--force         Install even if the version appears to be installed already
 #   -s/--skip-existing Skip if the version appears to be installed already
 #
 #   python-build options:
 #
-#   -p/--patch         Apply a patch from stdin before building
 #   -v/--verbose       Verbose mode: print compilation status to stdout
 #   --version          Show version of python-build
 #   -g/--debug         Build a debug version
@@ -22,6 +23,7 @@ set -e
 # Provide pyenv completions
 if [ "$1" = "--complete" ]; then
   echo --list
+  echo --query
   echo --force
   echo --skip-existing
   echo --verbose
@@ -38,9 +40,10 @@ usage() {
 }
 
 definitions() {
-  local query="$1"
+  local query="packages.*$1"
+  local grep_cmd=$(type -P rg ggrep grep | head -n1)
   nix search github:cachix/nixpkgs-python ".*" \
-    | $(type -P ggrep grep | head -n1) --color="never" "packages.*" \
+    | $grep_cmd --color="never" "$query" \
     || true
 }
 
@@ -51,7 +54,6 @@ indent() {
 unset FORCE
 unset SKIP_EXISTING
 unset VERBOSE
-unset HAS_PATCH
 unset DEBUG
 
 [ -n "$PYENV_DEBUG" ] && VERBOSE="-v"
@@ -65,6 +67,16 @@ for option in "${OPTIONS[@]}"; do
   "l" | "list" )
     echo "Available versions:"
     definitions | indent
+    exit
+    ;;
+  "q" | "query" )
+    query="${ARGUMENTS[0]}"
+    versions="$(definitions "$query")"
+    if [ -z "$versions" ]; then
+      echo "No versions found for query: $query"
+      exit 1
+    fi
+    echo "$versions" | indent
     exit
     ;;
   "f" | "force" )
@@ -130,6 +142,7 @@ for DEFINITION in "${DEFINITIONS[@]}"; do
   # Try to resolve a prefix if user indeed gave a prefix.
   # We install the version under the resolved name
   # and hooks also see the resolved name
+  # TODO: Fix this, for nix-install this does not always give the newest available version
   DEFINITION="$(pyenv-latest -f -k "$DEFINITION")"
 
   # Set VERSION_NAME from $DEFINITION. Then compute the installation prefix.
@@ -179,9 +192,7 @@ for DEFINITION in "${DEFINITIONS[@]}"; do
         echo "$candidates" | indent
       fi
       echo
-      echo "See all available versions with \`pyenv install --list'."
-      echo
-      echo -n "If the version you need is missing, try upgrading pyenv.\n"
+      echo -n "See all available versions with \`pyenv nix-install --list'."
     } >&2
   fi
 
